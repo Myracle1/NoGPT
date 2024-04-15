@@ -63,7 +63,7 @@ while key!="q":
         #print("文本内容：",texts[i])
         #消除文本中的换行符,不确定影响
         texts[i]=texts[i].replace("\n","")
-        results=model(texts[i],model_type,n_perturbations)
+        results,D_ll_shreshold,Score_threshold=model(texts[i],model_type,n_perturbations)
         if(text_type-results["dPrediction"]==0):
             dCount+=1
         if(text_type==results["sPrediction"]):
@@ -71,6 +71,7 @@ while key!="q":
         values.append(results)
         if(i%100==0):
             write_values_to_file('results.txt', values)
+            values.clear()
     dAccuracy=dCount/len(texts)
     sAccuracy=sCount/len(texts)
     print(f"dAccuracy: {dAccuracy} D_ll_shreshold: {D_ll_shreshold} sAccuracy: {sAccuracy} Score_threshold: {Score_threshold}")

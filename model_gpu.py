@@ -189,7 +189,7 @@ class PPL_LL_based_gpt2_t5:
             self.num_perturb=30 #单个文本获得的扰动文本数量，数量越大，计算时间越长，但平均值越准确
         elif mask_model_id == "t5-large":
             print("Using t5-large model & default perturbations=15")
-            self.num_perturb=15
+            self.num_perturb=10
         else:
             print(f"Using {mask_model_id} model")
             self.num_perturb=10
@@ -197,6 +197,9 @@ class PPL_LL_based_gpt2_t5:
         if n_perturbations != -1:
             print(f"Using {n_perturbations} perturbations")
             self.num_perturb=n_perturbations    
+
+        print("perturbations: ",self.num_perturb)
+
         self.mask_tokenizer = AutoTokenizer.from_pretrained(mask_model_id)
         self.mask_model = T5ForConditionalGeneration.from_pretrained(mask_model_id).to(self.device)
 
@@ -292,9 +295,9 @@ class PPL_LL_based_gpt2_t5:
                 results["mean_dLL per line"] = sum(dll_per_line)/len(dll_per_line)
                 results["score per line"] = sum(sll_per_line)/len(sll_per_line)
                 print(f"mean_dLL per line: {results['mean_dLL per line']} score per line: {results['score per line']}")
-
+                '''
             Perplexity_per_line.append(ppl)
-            '''
+            
         
         #print(f"Perplexity per line {sum(Perplexity_per_line)/len(Perplexity_per_line)}")
         results["Perplexity per line"] = sum(Perplexity_per_line)/len(Perplexity_per_line)
