@@ -5,6 +5,9 @@ elif version=="gpu":
     from model_gpu import PPL_LL_based_gpt2_t5
 import time
 import os
+import matplotlib.pyplot as plt
+from numpy import mean, median
+
 
 #textPath=sys.argv[2] #获取文本路径
 #textPath="C:\\Users\\28551\\OneDrive\\桌面\\信安\\ssmDemo\\EstimateText.txt" #测试用
@@ -46,6 +49,7 @@ n_pertrubations=int(input("请输入扰动次数：（if default press enter）\
 mark=input("本次预测备注：（无则enter）\n-->") or "none"
 
 values=[]
+all_ordered_dicts = []
 texts = read_texts_from_file(textPath)
 model=PPL_LL_based_gpt2_t5()
 key="c"
@@ -59,8 +63,6 @@ while key!="q":
 
     for i in range(len(texts)):
         print("第",i+1,"次预测")
-        #读取文本中<text>标签后的内容为一段文本
-        #print("文本内容：",texts[i])
         #消除文本中的换行符,不确定影响
         texts[i]=texts[i].replace("\n","")
         results,D_ll_shreshold,Score_threshold=model(texts[i],model_type,n_perturbations)
@@ -68,6 +70,7 @@ while key!="q":
             dCount+=1
         if(text_type==results["sPrediction"]):
             sCount+=1
+        all_ordered_dicts.append(results)
         values.append(results)
         if(i%100==0):
             write_values_to_file('results.txt', values)
@@ -75,6 +78,35 @@ while key!="q":
     dAccuracy=dCount/len(texts)
     sAccuracy=sCount/len(texts)
     print(f"dAccuracy: {dAccuracy} D_ll_shreshold: {D_ll_shreshold} sAccuracy: {sAccuracy} Score_threshold: {Score_threshold}")
+
+    # 提取 'D_LL' 和 'Score' 的值
+    d_ll_values = [od['D_LL'] for od in all_ordered_dicts if 'D_LL' in od]
+    score_values = [od['Score'] for od in all_ordered_dicts if 'Score' in od]
+
+    # 创建 D_LL 的直方图
+    plt.figure(figsize=(10, 5))
+    plt.hist(d_ll_values, bins=20, alpha=0.7, color='blue', edgecolor='black')
+    plt.title('Distribution of D_LL')
+    plt.xlabel('D_LL')
+    plt.ylabel('Frequency')
+    plt.axvline(mean(d_ll_values), color='red', linestyle='--', label=f'Mean: {mean(d_ll_values)}') #添加平均值
+    plt.axvline(median(d_ll_values), color='red', linestyle='--', label=f'Median: {median(d_ll_values)}') #添加中位数
+    plt.legend()
+    plt.show()
+    savepath1 = "D_LL_for_{}.png".format(textPath)
+    plt.savefig(savepath1)
+
+    # 创建 Score 的直方图
+    plt.figure(figsize=(10, 5))
+    plt.hist(score_values, bins=20, alpha=0.7, color='green', edgecolor='black')
+    plt.title('Distribution of Score')
+    plt.xlabel('Score')
+    plt.ylabel('Frequency')
+    plt.axvline(mean(score_values), color='orange', linestyle='--', label=f'Mean: {mean(score_values)}')
+    plt.legend()
+    plt.show()
+    savepath2 = "Score_for_{}.png".format(textPath)
+    plt.savefig(savepath2)
 
     values.append("dAccuracy: "+str(dAccuracy))
     values.append("sAccuracy: "+str(sAccuracy))
@@ -93,6 +125,7 @@ while key!="q":
     mark=input("输入备注：") or "none"
 
 write_values_to_file('results.txt', values)
+
 print("测试结束")
 os.system("pause")
 #results=model(sentence)
