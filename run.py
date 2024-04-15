@@ -22,10 +22,11 @@ def write_values_to_file(filename, values):
             file.write(str(x) + "\n")
 
 def read_texts_from_file(filename):
-    with open(filename, 'r') as file:
+    with open(filename, 'r',encoding='utf-8') as file:
         content = file.read()
     texts = content.split('</text>')
     texts = [text.replace('<text>', '') for text in texts if text.strip() != '']
+    texts = [text for text in texts if len(text.split()) >= 100]  # 过滤少于100个词的文本
     return texts
 
 model_type=""
@@ -41,17 +42,16 @@ while text_type==-1:
 print("请选择模型类型：t5-small/t5-large(512词以上使用t5-large准确度更高，但是耗时更长)；也可交给系统自动判断(press enter to skip) ")
 model_type=input("-->") or "none"
 
-n_pertrubations=input("请输入扰动次数：（if default press enter）\n-->") or -1
+n_pertrubations=int(input("请输入扰动次数：（if default press enter）\n-->"))
 mark=input("本次预测备注：（无则enter）\n-->") or "none"
 
 values=[]
 texts = read_texts_from_file(textPath)
 model=PPL_LL_based_gpt2_t5()
-
 key="c"
 
 while key!="q":
-    print("texts in file:",textPath)
+    print(f"texts in file: {textPath}, num: {len(texts)}")
     values.append(textPath.split("\\")[-1]+" Mark: "+mark)
 
     dCount=0
@@ -63,12 +63,14 @@ while key!="q":
         #print("文本内容：",texts[i])
         #消除文本中的换行符,不确定影响
         texts[i]=texts[i].replace("\n","")
-        results,D_ll_shreshold,Score_threshold=model(texts[i],model_type,n_perturbations)
+        results=model(texts[i],model_type,n_perturbations)
         if(text_type-results["dPrediction"]==0):
             dCount+=1
         if(text_type==results["sPrediction"]):
             sCount+=1
         values.append(results)
+        if(i%100==0):
+            write_values_to_file('results.txt', values)
     dAccuracy=dCount/len(texts)
     sAccuracy=sCount/len(texts)
     print(f"dAccuracy: {dAccuracy} D_ll_shreshold: {D_ll_shreshold} sAccuracy: {sAccuracy} Score_threshold: {Score_threshold}")
