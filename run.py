@@ -45,7 +45,7 @@ while text_type==-1:
 print("请选择模型类型：t5-small/t5-large(512词以上使用t5-large准确度更高，但是耗时更长)；也可交给系统自动判断(press enter to skip) ")
 model_type=input("-->") or "none"
 
-n_pertrubations=int(input("请输入扰动次数：（if default press enter）\n-->"))
+n_pertrubations=int(input("请输入扰动次数：（if default press enter）\n-->")) or -1
 mark=input("本次预测备注：（无则enter）\n-->") or "none"
 
 values=[]
