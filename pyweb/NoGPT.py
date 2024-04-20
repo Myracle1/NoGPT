@@ -2,9 +2,10 @@ import base64
 import streamlit as st
 import time
 import cv2
-import pytesseract
+import pytesseract  # OCR:图片转文字
 import numpy as np
 from model import PPL_LL_based_gpt2_t5  # 确保这个路径正确，并包含了您的模型类
+import speech_recognition as sr  # 语音转文字
 
 # 设置页面的一些样式
 def main_bg(main_bg):
@@ -61,6 +62,8 @@ def process_file(file, model_type):
     if file.name.endswith('.txt'):
         texts = read_texts_from_file(file)
         return process_texts(texts, model_type)
+    if file.name.endswith('.wav'):
+        return process_audio(file, model_type)
     else:
         return process_image(file, model_type)
 
@@ -84,6 +87,23 @@ def process_image(file, model_type):
     text = pytesseract.image_to_string(img)
     return process_text_message(text, model_type)
 
+def process_audio(file, model_type):
+    # 创建一个Recognizer对象
+    r = sr.Recognizer()
+    # 使用Google Speech Recognition进行识别
+    try:
+        with sr.AudioFile(file) as source:
+            # listen for the data (load audio to memory)
+            audio_data = r.record(source)
+            text = r.recognize_google(audio_data)
+            st.write("识别的文本是:", text)
+            return process_text_message(text, model_type)
+    except sr.UnknownValueError:
+        st.error("Google Speech Recognition引擎无法理解音频")
+    except sr.RequestError as e:
+        st.error(f"Google Speech Recognition服务出现了错误; {e}")
+
+
 # 主函数
 def main():
     # 调用边框背景
@@ -99,14 +119,13 @@ def main():
     user_msg = st.text_area("👉输入您的消息：")
 
     # 文件上传
-    uploaded_file = st.file_uploader("📂上传文件", type=["txt", "jpg", "png", "jpeg"])
+    uploaded_file = st.file_uploader("📂上传文件", type=["txt", "jpg", "png", "jpeg", "wav"])
 
     # 选择模型类型
-    model_type = st.selectbox('🔑选择模型类型', ['t5-small', 't5-large'], index=0)
+    model_type = st.selectbox('🔑选择模型类型', ['t5-small', 't5-large', 'none'], index=0)
 
     # 开始检测按钮
     start_detect = st.button('⏳开始检测')
-
     # 根据用户输入和上传的文件进行处理
     if start_detect:
         if user_msg:
