@@ -1,3 +1,4 @@
+"""V3.0：文字+OCR+语音版本+SVM给出分类结果"""
 import base64
 import streamlit as st
 import time
@@ -6,8 +7,8 @@ import pytesseract  # OCR:图片转文字
 import numpy as np
 from model import PPL_LL_based_gpt2_t5  # 确保这个路径正确，并包含了您的模型类
 import speech_recognition as sr  # 语音转文字
+import joblib
 
-# 设置页面的一些样式
 def main_bg(main_bg):
     main_bg_ext = "png"
     st.markdown(
@@ -21,7 +22,32 @@ def main_bg(main_bg):
          """,
         unsafe_allow_html=True
     )
+def predict_svm(data):
+    # 加载Python训练的SVM模型
+    svm_model = joblib.load('D:/PyCode/NoGPT/models/new_svm_model.pkl')
+    # 调整数据的形状以匹配模型的输入
+    data = data.reshape(1, -1)
+    # 使用模型进行预测
+    predictions = svm_model.predict(data)
+    probabilities = svm_model.predict_proba(data)
+    return predictions, probabilities
 
+# 从结果中提取出关键指标的数值
+def extract_crucial_value(results):
+    ordered_dict = results[0][0]
+    D_LL = ordered_dict['D_LL']
+    score = ordered_dict['Score']
+    PPL = ordered_dict['Perplexity']
+    data_array = np.array([D_LL, score, PPL])
+    return data_array
+
+def mul_extract_crucial_value(results):
+    results = results[0]
+    D_LL = results['D_LL']
+    score = results['Score']
+    PPL = results['Perplexity']
+    data_array = np.array([D_LL, score, PPL])
+    return data_array
 
 def sidebar_bg(side_bg):
     side_bg_ext = 'png'
@@ -55,7 +81,7 @@ def show_progress(text='正在检测中'):
 # 辅助函数，用于处理文本消息
 def process_text_message(user_msg, model_type):
     model = PPL_LL_based_gpt2_t5()
-    return model(user_msg, model_type, model_type)
+    return model(user_msg, model_type)
 
 # 辅助函数，用于处理文件
 def process_file(file, model_type):
@@ -132,15 +158,38 @@ def main():
             show_progress()  # 显示进度条
             results = process_text_message(user_msg, model_type)
             st.write("文本检测结果为：", results)
+            data_array = mul_extract_crucial_value(results)
+            predictions, probabilities = predict_svm(data_array)
+            if predictions == 1:
+                st.write("该文本是由AI生成的")
+            else:
+                st.write("该文本是由人类生成的")
+            st.write("0代表人类生成概率，1代表AI生成概率:", probabilities)
         elif uploaded_file:
             show_progress()  # 显示进度条
             results = process_file(uploaded_file, model_type)
             if isinstance(results, list):
                 st.write("文本检测结果为：", results)
+                data_array = extract_crucial_value(results)
+                predictions, probabilities = predict_svm(data_array)
+                if predictions==1:
+                   st.write("该文本是由AI生成的")
+                else:
+                   st.write("该文本是由人类生成的")
+                st.write("0代表人类生成概率，1代表AI生成概率:", probabilities)
             else:
                 st.write("文本检测结果为：", results)
-
+                print(results)
+                data_array = mul_extract_crucial_value(results)
+                predictions, probabilities = predict_svm(data_array)
+                if predictions==1:
+                   st.write("该文本是由AI生成的")
+                else:
+                   st.write("该文本是由人类生成的")
+                st.write("0代表人类生成概率，1代表AI生成概率:", probabilities)
 
 # 调用主函数
 if __name__ == "__main__":
     main()
+    # 使用提供的示例数据调用函数
+
